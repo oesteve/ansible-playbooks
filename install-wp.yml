@@ -1,0 +1,39 @@
+---
+- name: Install Wordpress & MySQL
+  hosts: all
+  tasks:
+    - name: Run docker mysql image
+      docker_container:
+        name: mysql
+        state: started
+        image: mysql:5.7
+        restart_policy: always
+        restart: true
+        published_ports:
+          - "3306:3306"
+        env:
+          MYSQL_DATABASE: wp
+          MYSQL_USER: wp_user
+          MYSQL_PASSWORD: wp_password
+          MYSQL_RANDOM_ROOT_PASSWORD: wp_root_password
+        volumes:
+           - "/var/lib/mysql/:/var/lib/mysql/"
+           
+    - name: Run docker wp image
+      docker_container:
+        name: wordpress
+        state: started
+        image: wordpress
+        restart: true
+        restart_policy: always
+        published_ports:
+          - "80:80"
+        env:
+          WORDPRESS_DB_HOST: "{{ ansible_default_ipv4.address }}"
+          WORDPRESS_DB_USER: wp_user
+          WORDPRESS_DB_PASSWORD: wp_password
+          WORDPRESS_DB_NAME: wp
+        volumes:
+          - "/var/www/html/wp-content/themes/:/var/www/html/wp-content/themes/"
+          - "/var/www/html/wp-content/plugins/:/var/www/html/wp-content/plugins/"
+          - "/var/www/html/wp-content/uploads/:/var/www/html/wp-content/uploads/"

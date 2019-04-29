@@ -1,0 +1,54 @@
+---
+- name: Install docker CE
+  hosts: all
+  vars:
+    docker_version: 18.06.1~ce~3-0~ubuntu
+    docker_compose_version: 18.06.1~ce~3-0~ubuntu
+
+  tasks:
+    - name: Docker APT dependencies
+      apt:
+        name: ['python-pip', 'python-setuptools']
+        state: present
+
+    - name: Python depenencies
+      yum:
+        name: ['python-pip']
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+
+    - name: Install Docker
+      apt:
+        name: docker-ce={{ docker_version }}
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64"
+        dest: "/usr/local/bin/docker-compose"
+        force: False
+        owner: "root"
+        group: "root"
+        mode: "0755"
+
+    - name: Fix grub flags
+      lineinfile:
+        path: /etc/default/grub
+        backup: true
+        state: present
+        regexp: '^GRUB_CMDLINE_LINUX='
+        line: 'GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"'
+      register: config_updated
+
+    - name: "Update grup"
+      command: update-grub
+      when:
+        - config_updated is changed
+
