@@ -1,7 +1,33 @@
 ---
 - name: Install Wordpress & MySQL
   hosts: all
+  vars:
+    wp_dir: /opt/wordpress
+    wp_git_repository: https://github.com/oesteve/wordpress.git
   tasks:
+
+
+    - name: Create WP dirs
+      file:
+        path: "{{ wp_dir }}"
+        state: directory
+        mode: 0755
+        owner: 33 # www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+        group: 33
+
+    - name: Create WP dirs
+      file:
+        path: "{{ wp_dir }}/{{ item }}"
+        state: directory
+        mode: 0755
+        owner: 33 # www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+        group: 33
+      with_items:
+        - db
+        - plugins
+        - uploads
+        - html
+
     - name: Run docker mysql image
       docker_container:
         name: mysql
@@ -17,8 +43,8 @@
           MYSQL_PASSWORD: wp_password
           MYSQL_RANDOM_ROOT_PASSWORD: wp_root_password
         volumes:
-           - "/var/lib/mysql/:/var/lib/mysql/"
-           
+           - "{{ wp_dir }}/db:/var/lib/mysql/"
+
     - name: Run docker wp image
       docker_container:
         name: wordpress
@@ -27,13 +53,13 @@
         restart: true
         restart_policy: always
         published_ports:
-          - "80:80"
+          - "8088:80"
         env:
           WORDPRESS_DB_HOST: "{{ ansible_default_ipv4.address }}"
           WORDPRESS_DB_USER: wp_user
           WORDPRESS_DB_PASSWORD: wp_password
           WORDPRESS_DB_NAME: wp
         volumes:
-          - "/var/www/html/wp-content/themes/:/var/www/html/wp-content/themes/"
-          - "/var/www/html/wp-content/plugins/:/var/www/html/wp-content/plugins/"
-          - "/var/www/html/wp-content/uploads/:/var/www/html/wp-content/uploads/"
+          - "{{ wp_dir }}/plugins:/var/www/html/wp-content/plugins"
+          - "{{ wp_dir }}/uploads:/var/www/html/wp-content/uploads"
+

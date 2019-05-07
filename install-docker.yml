@@ -3,7 +3,7 @@
   hosts: all
   vars:
     docker_version: 18.06.1~ce~3-0~ubuntu
-    docker_compose_version: 18.06.1~ce~3-0~ubuntu
+    docker_compose_version: 1.24.0
 
   tasks:
     - name: Docker APT dependencies

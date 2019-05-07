@@ -1,0 +1,49 @@
+---
+- name: Update Let's encrypt certificates
+  hosts: all
+  vars:
+    services_dir: /opt
+    email: oscar@oscaresteve.com
+    lets_encrypt_dir: "{{ services_dir }}/letsencrypt"
+    lets_encrypt_web_root: "{{ services_dir }}/letsencrypt/webroot"
+    rsa_key_size: 2048
+    domain_list:
+      - oscaresteve.com
+      - www.oscaresteve.com
+    domains: ""
+  tasks:
+    - name: Create Let's encrypt dir
+      file:
+        path: "{{ lets_encrypt_dir }}"
+        state: directory
+        mode: 0755
+
+    - name: Create Let's encrypt log dir
+      file:
+        path: "{{ lets_encrypt_dir }}/logs"
+        state: directory
+        mode: 0755
+
+    - name: set domains
+      set_fact: domains="{{ domains }} -d {{ item }}"
+      with_items: "{{ domain_list }}"
+
+    - name: Run lest's encrypt
+      docker_container:
+        name: lets_encrypt
+        auto_remove: yes
+        image: certbot/certbot
+        volumes:
+          - "{{ lets_encrypt_dir }}:/etc/letsencrypt"
+          - "{{ lets_encrypt_dir }}/logs:/var/log/letsencrypt"
+          - "{{ lets_encrypt_web_root }}:/var/www/letsencrypt"
+        command: >
+          certonly --renew-by-default
+          {{ domains }}
+          --webroot
+          --webroot-path /var/www/letsencrypt
+          --non-interactive
+          --agree-tos
+          --email {{ email }}
+          --rsa-key-size {{ rsa_key_size }}
+
