@@ -1,62 +1,13 @@
 ---
-- name: Install docker CE
+- name: Install Nginx Http 2.0 with Let's Encrypt
   hosts: all
   vars:
-    docker_image: nginx
-    services_dir: /opt
-    nginx_conf_dir: "{{ services_dir }}/nginx/conf"
-    lets_encrypt_web_root: "{{ services_dir }}/letsencrypt/webroot"
-    lets_encrypt_dir: "{{ services_dir }}/letsencrypt"
-
-  tasks:
-
-    - name: Create Nginx conf dir
-      file:
-        path: "{{ nginx_conf_dir }}"
-        state: directory
-        mode: 0755
-
-    - name: Create Let's Encrypt webroot
-      file:
-        path: "{{ lets_encrypt_web_root }}"
-        state: directory
-        mode: 0755
-
-    - name: Create Nginx ssl conf dir
-      file:
-        path: "{{ nginx_conf_dir }}/ssl"
-        state: directory
-        mode: 0755
-
-    - name: Deploy nginx ssl options
-      template:
-        src: nginx/options-ssl-nginx.conf.j2
-        dest: "{{ nginx_conf_dir }}/ssl/options-ssl-nginx.conf"
-        mode: 0644
-
-    - name: Generate Diffie-Hellman (DH) key exchange
-      command: openssl dhparam -out {{ nginx_conf_dir }}/ssl/dhparam.pem 2048
-      args:
-        creates: "{{ nginx_conf_dir }}/ssl/dhparam.pem"
-
-    - name: Deploy nginx conf template
-      template:
-        src: nginx/oscaresteve.com.conf.j2
-        dest: "{{ nginx_conf_dir }}/oscaresteve.com.conf"
-        mode: 0644
-
-    - name: Run docker nginx image
-      docker_container:
-        name: nginx
-        state: started
-        image: "{{ docker_image }}"
-        restart_policy: always
-        restart: true
-        volumes:
-          - "{{ lets_encrypt_dir }}:/etc/letsencrypt"
-          - "{{ lets_encrypt_web_root }}:/var/www/letsencrypt"
-          - "{{ nginx_conf_dir }}/ssl:/etc/nginx/conf.d/ssl"
-          - "{{ nginx_conf_dir }}/oscaresteve.com.conf:/etc/nginx/conf.d/oscaresteve.com.conf"
-        published_ports:
-          - "80:80"
-          - "443:443"
+    backends:
+      - name: oscaresteve.com
+        hostnames:
+          - oscaresteve.com
+          - www.oscaresteve.com
+        servers:
+          - 172.17.0.1:8088
+  roles:
+    - ansible-docker-nginx
