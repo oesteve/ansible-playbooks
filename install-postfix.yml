@@ -1,0 +1,21 @@
+---
+- name: Install Postfix SMTP server
+  hosts: all
+  vars:
+    domain: oscaresteve.com
+  tasks:
+    - name: Run docker image
+      docker_container:
+        name: postfix
+        state: started
+        image: juanluisbaptiste/postfix
+        restart_policy: always
+        published_ports:
+          - "25:25"
+        env:
+          SMTP_SERVER: "{{ domain }}"
+          SMTP_USERNAME: "smtp@{{ domain }}"
+          SMTP_PASSWORD: "password"
+          SMTP_PORT: "25"
+          SERVER_HOSTNAME: "{{ domain }}"
+          SMTP_NETWORKS: "172.16.0.0/12,93.189.88.112/32,77.230.38.131/32"
